@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Library Mediator Common Data Model",
+  "description": "The unified schema for all MWA entities across MySQL, PostgreSQL, and MongoDB.",
+  
+  "definitions": {
+    
+    "User": {
+      "type": "object",
+      "description": "Unified User profile and authentication details (from MySQL).",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The globally unified user identifier (mapped from MySQL BIGINT)."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's unique email address."
+        },
+        "name": {
+          "type": "string",
+          "description": "User's display name."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "researcher", "student"],
+          "description": "User's access control role."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the user was created."
+        }
+      },
+      "required": ["userId", "email", "name", "role", "createdAt"]
+    },
+    
+    "ArticleMetric": {
+      "type": "object",
+      "description": "Analytical metrics associated with an Article (from PostgreSQL).",
+      "properties": {
+        "views": { "type": "integer" },
+        "downloads": { "type": "integer" },
+        "citationCount": { "type": "integer" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["views", "downloads", "citationCount"]
+    },
+    
+    "Article": {
+      "type": "object",
+      "description": "A scholarly paper, aggregated from PostgreSQL, MongoDB, and arXiv API.",
+      "properties": {
+        "articleId": {
+          "type": "string",
+          "description": "The global unique key, derived from the arXiv ID."
+        },
+        "title": { "type": "string" },
+        "summary": { "type": "string", "description": "The abstract or short summary." },
+        "authors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of all author names."
+        },
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of subject categories (e.g., 'quant-ph')."
+        },
+        "publishedDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Original date of publication."
+        },
+        "latestVersion": {
+          "type": "integer",
+          "description": "The latest version number."
+        },
+        "doi": { "type": "string", "description": "Digital Object Identifier (optional)." },
+        "pdfLink": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to the latest PDF file."
+        },
+        "fullText": {
+          "type": "string",
+          "description": "Extracted full text content (from MongoDB, used for full-text search)."
+        },
+        "metrics": {
+          "$ref": "#/definitions/ArticleMetric",
+          "description": "Nested object containing usage statistics."
+        }
+      },
+      "required": ["articleId", "title", "authors", "publishedDate"]
+    },
+    
+    "UserAction": {
+      "type": "object",
+      "description": "A specific action taken by a User on an Article (from MySQL).",
+      "properties": {
+        "actionId": {
+          "type": "string",
+          "description": "Primary key for the action record."
+        },
+        "userId": {
+          "$ref": "#/definitions/User/properties/userId",
+          "description": "FK linking to the User entity."
+        },
+        "articleId": {
+          "$ref": "#/definitions/Article/properties/articleId",
+          "description": "FK linking to the Article entity (arXiv ID)."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["favorite", "downloaded", "bookmarked"],
+          "description": "The type of action recorded."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the action occurred."
+        }
+      },
+      "required": ["actionId", "userId", "articleId", "type", "timestamp"]
+    }
+  }
+}
