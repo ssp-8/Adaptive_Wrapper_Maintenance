@@ -1,171 +1,116 @@
 {
+  "cqlVersion": "1.0.0",
+  "description": "Rules for the Common Query Language used between the Mediator and Wrappers, including CRUD and aggregation support.",
 
-    "cql_version": "1.0.0",
-    "description": "Rules for the Common Query Language used between the Mediator and Wrappers, including CRUD and aggregation support.",
+  "cqlKeys": [
+    "operation",
+    "filter",
+    "aggregate",
+    "sort",
+    "limit",
+    "payload",
+    "entity",
+    "selection"
+  ],
 
-    "cql_keys": [
-        "entity",
-        "operation",
-        "selection",
-        "filter",
-        "aggregate",
-        "sort",
-        "limit",
-        "payload"
-    ],
+  "cqlEntityKey": "entity",
+  "cqlSelectionKey": "selection",
 
-    "operation": {
-        "format": {
-            "name": "string",
-            "purpose": "string",
-            "required_parameters": ["string"],
-            "optional_parameters": ["string"]
-        },
-        "options": {
-            "GET": {
-                "name": "SELECT",
-                "purpose": "Retrieve data based on filters and selections.",
-                "required_parameters": ["entity", "selection"],
-                "optional_parameters": ["filter", "aggregate", "sort", "limit"]
-            },
-            "POST": {
-                "name": "INSERT",
-                "purpose": "Insert a new record for the specified entity.",
-                "required_parameters": ["entity", "payload"]
-            },
-            "PUT": {
-                "name": "UPDATE",
-                "purpose": "Update existing records matching the filter criteria.",
-                "required_parameters": ["entity", "filter", "payload"]
-            },
-            "DELETE": {
-                "name": "DELETE",
-                "purpose": "Delete records matching the filter criteria.",
-                "required_parameters": ["entity", "filter"]
-            }
-        }
+  "operation": {
+    "GET": {
+      "name": "SELECT",
+      "purpose": "Retrieve data based on filters and selections.",
+      "requiredParameters": ["entity", "selection"],
+      "optionalParameters": ["filter", "aggregate", "sort", "limit"]
     },
-
-    "filter": {
-        "format": {
-            "name": "string",
-            "required_parameters": ["string"],
-            "optional_parameters": ["string"],
-            "description": "string"
-        },
-        "options": {
-            "=": {
-                "name": "=",
-                "required_parameters": ["field", "value"],
-                "description": "Equal to"
-            },
-            "!=": {
-                "name": "!=",
-                "required_parameters": ["field", "value"],
-                "description": "Not equal to"
-            },
-            ">": {
-                "name": ">",
-                "required_parameters": ["field", "value"],
-                "description": "Greater than (numeric or date)"
-            },
-            "<": {
-                "name": "<",
-                "required_parameters": ["field", "value"],
-                "description": "Less than (numeric or date)"
-            },
-            ">=": {
-                "name": ">=",
-                "required_parameters": ["field", "value"],
-                "description": "Greater than or equal to"
-            },
-            "<=": {
-                "name": "<=",
-                "required_parameters": ["field", "value"],
-                "description": "Less than or equal to"
-            },
-            "AND": {
-                "name": "AND",
-                "required_parameters": ["filter", "filter"],
-                "description": "Conjunction (implied if not specified)"
-            },
-            "OR": {
-                "name": "OR",
-                "required_parameters": ["filter", "filter"],
-                "description": "Disjunction"
-            },
-            "NOT": {
-                "name": "NOT",
-                "required_parameters": ["filter"],
-                "description": "Negation"
-            },
-            "IN": {
-                "name": "IN",
-                "required_parameters": ["field", "array"],
-                "description": "Value is in a provided list/array"
-            },
-            "NOT IN": {
-                "name": "NOT IN",
-                "required_parameters": ["field", "array"],
-                "description": "Value is not in a provided list/array"
-            }
-        }
+    "POST": {
+      "name": "INSERT",
+      "purpose": "Insert a new record for the specified entity.",
+      "requiredParameters": ["entity", "payload"]
     },
-    
-    "aggregate": {
-        "format": {
-            "name": "string",
-            "required_parameters": ["string"],
-            "optional_parameters": ["string"],
-            "description": "string"
-        },
-        "options": {
-            "COUNT": {
-                "name": "COUNT",
-                "required_parameters": ["field"],
-                "description": "Count the number of records"
-            },
-            "SUM": {
-                "name": "SUM",
-                "required_parameters": ["field"],
-                "description": "Sum of a numeric field"
-            },
-            "AVG": {
-                "name": "AVG",
-                "required_parameters": ["field"],
-                "description": "Average of a numeric field"
-            },
-            "MIN": {
-                "name": "MIN",
-                "required_parameters": ["field"],
-                "description": "Minimum value of a field"
-            },
-            "MAX": {
-                "name": "MAX",
-                "required_parameters": ["field"],
-                "description": "Maximum value of a field"
-            }
-        }
+    "PUT": {
+      "name": "UPDATE",
+      "purpose": "Update existing records matching the filter criteria.",
+      "requiredParameters": ["entity", "filter", "payload"]
     },
-
-    "sort": {
-        "format": {
-            "name": "string",
-            "required_parameters": ["string"],
-            "optional_parameters": ["string"],
-            "description": "string"
-        },
-        "options": {
-            "ASC": {
-                "name": "ASC",
-                "required_parameters": ["field"],
-                "description": "Sort ascending"
-            },
-            "DESC": {
-                "name": "DESC",
-                "required_parameters": ["field"],
-                "description": "Sort descending"
-            }
-        }
+    "DELETE": {
+      "name": "DELETE",
+      "purpose": "Delete records matching the filter criteria.",
+      "requiredParameters": ["entity", "filter"]
     }
+  },
+
+  "filter": {
+    "=": {
+      "name": "=",
+      "requiredParameters": ["field", "value"],
+      "description": "Equal to"
+    },
+    "!=": {
+      "name": "!=",
+      "requiredParameters": ["field", "value"],
+      "description": "Not equal to"
+    },
+    ">": {
+      "name": ">",
+      "requiredParameters": ["field", "value"],
+      "description": "Greater than (numeric or date)"
+    },
+    "<": {
+      "name": "<",
+      "requiredParameters": ["field", "value"],
+      "description": "Less than (numeric or date)"
+    },
+    ">=": {
+      "name": ">=",
+      "requiredParameters": ["field", "value"],
+      "description": "Greater than or equal to"
+    },
+    "<=": {
+      "name": "<=",
+      "requiredParameters": ["field", "value"],
+      "description": "Less than or equal to"
+    }
+  },
+
+  "aggregate": {
+    "COUNT": {
+      "name": "COUNT",
+      "requiredParameters": [],
+      "description": "Count the number of records"
+    },
+    "SUM": {
+      "name": "SUM",
+      "requiredParameters": [],
+      "description": "Sum of a numeric field"
+    },
+    "AVG": {
+      "name": "AVG",
+      "requiredParameters": [],
+      "description": "Average of a numeric field"
+    },
+    "MIN": {
+      "name": "MIN",
+      "requiredParameters": [],
+      "description": "Minimum value of a field"
+    },
+    "MAX": {
+      "name": "MAX",
+      "requiredParameters": [],
+      "description": "Maximum value of a field"
+    }
+  },
+
+  "sort": {
+    "ASC": {
+      "name": "ASC",
+      "requiredParameters": [],
+      "description": "Sort ascending"
+    },
+    "DESC": {
+      "name": "DESC",
+      "requiredParameters": [],
+      "description": "Sort descending"
+    }
+  }
 }

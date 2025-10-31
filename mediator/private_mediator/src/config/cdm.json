@@ -5,10 +5,9 @@
   "definitions": {
     "User": {
       "type": "object",
-      "dataSources": [
-        "wrapper-mysql"
-      ],
+      "dataSources": ["wrapper-mysql"],
       "description": "Unified User profile and authentication details (from MySQL).",
+      "attributes": ["userId", "email", "name", "role", "createdAt"],
       "properties": {
         "userId": {
           "type": "string",
@@ -25,11 +24,7 @@
         },
         "role": {
           "type": "string",
-          "enum": [
-            "admin",
-            "researcher",
-            "student"
-          ],
+          "enum": ["admin", "researcher", "student"],
           "description": "User's access control role."
         },
         "createdAt": {
@@ -38,20 +33,13 @@
           "description": "Date and time the user was created."
         }
       },
-      "required": [
-        "userId",
-        "email",
-        "name",
-        "role",
-        "createdAt"
-      ]
+      "required": ["userId", "email", "name", "role", "createdAt"]
     },
     "ArticleMetric": {
       "type": "object",
       "description": "Analytical metrics associated with an Article (from PostgreSQL).",
-      "dataSources": [
-        "wrapper-postgresql"
-      ],
+      "dataSources": ["wrapper-postgresql"],
+      "attributes": ["views", "downloads", "citationCount", "lastUpdated"],
       "properties": {
         "views": {
           "type": "integer"
@@ -67,19 +55,24 @@
           "format": "date-time"
         }
       },
-      "required": [
-        "views",
-        "downloads",
-        "citationCount"
-      ]
+      "required": ["views", "downloads", "citationCount"]
     },
     "Article": {
       "type": "object",
       "description": "A scholarly paper, aggregated from PostgreSQL, MongoDB, and arXiv API.",
-      "dataSources": [
-        "wrapper-postgresql",
-        "wrapper-mongodb",
-        "arxiv-api"
+      "dataSources": ["wrapper-postgresql", "wrapper-mongodb", "arxiv-api"],
+      "attributes": [
+        "articleId",
+        "title",
+        "summary",
+        "authors",
+        "categories",
+        "publishedDate",
+        "latestVersion",
+        "doi",
+        "pdfLink",
+        "fullText",
+        "metrics"
       ],
       "properties": {
         "articleId": {
@@ -134,19 +127,13 @@
           "description": "Nested object containing usage statistics."
         }
       },
-      "required": [
-        "articleId",
-        "title",
-        "authors",
-        "publishedDate"
-      ]
+      "required": ["articleId", "title", "authors", "publishedDate"]
     },
     "UserAction": {
       "type": "object",
       "description": "A specific action taken by a User on an Article (from MySQL).",
-      "dataSources": [
-        "wrapper-mysql"
-      ],
+      "dataSources": ["wrapper-mysql"],
+      "attributes": ["actionId", "userId", "articleId", "type", "timestamp"],
       "properties": {
         "actionId": {
           "type": "string",
@@ -162,11 +149,7 @@
         },
         "type": {
           "type": "string",
-          "enum": [
-            "favorite",
-            "downloaded",
-            "bookmarked"
-          ],
+          "enum": ["favorite", "downloaded", "bookmarked"],
           "description": "The type of action recorded."
         },
         "timestamp": {
@@ -175,13 +158,7 @@
           "description": "When the action occurred."
         }
       },
-      "required": [
-        "actionId",
-        "userId",
-        "articleId",
-        "type",
-        "timestamp"
-      ]
+      "required": ["actionId", "userId", "articleId", "type", "timestamp"]
     }
   }
 }

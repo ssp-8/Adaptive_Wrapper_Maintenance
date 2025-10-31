@@ -1,13 +1,19 @@
 const express = require('express');
-const config = require('./config/config');
-const Logger = require('./services/logger');
+const cors = require('cors');
 
-const cqlExecuteRoute = require('./routes/cql_execute');
+const { mediatorConfig, routePaths } = require('./config/config');
+
+const Logger = require('./services/logger');
+const CQLExecuteRouter = require('./routes/cql-execute-route');
 
 const privateMediatorApp = express();
 
-privateMediatorApp.listen(config.PRIVATE_MEDIATOR_PORT, () => {
-    Logger.logInfo(`Private Mediator is running on port ${config.PRIVATE_MEDIATOR_PORT}`);
-});
+privateMediatorApp.use(express.json());
+privateMediatorApp.use(cors());
+privateMediatorApp.use(routePaths.CQL_EXECUTE, CQLExecuteRouter);
 
-privateMediatorApp
+privateMediatorApp.listen(mediatorConfig.PRIVATE_MEDIATOR_PORT, () => {
+  Logger.logInfo(
+    `Private Mediator is running on port ${mediatorConfig.PRIVATE_MEDIATOR_PORT}`
+  );
+});
