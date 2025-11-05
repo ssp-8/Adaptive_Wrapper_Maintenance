@@ -1,0 +1,46 @@
+{
+  "wrapperConfigVersion": "1.0",
+  "wrappers": [
+    "wrapper-mysql",
+    "wrapper-postgresql",
+    "wrapper-mongodb",
+    "wrapper-arxiv"
+  ],
+
+  "wrapper-mysql": {
+    "host": "localhost",
+    "port": 3001,
+    "protocol": "http",
+    "database": "mysql_db",
+    "timeout": 5000,
+    "retryAttempts": 3,
+    "cqlEndpoint": "/cql/execute"
+  },
+  "wrapper-postgresql": {
+    "host": "localhost",
+    "port": 3002,
+    "protocol": "http",
+    "database": "postgres_db",
+    "timeout": 5000,
+    "retryAttempts": 3,
+    "cqlEndpoint": "/cql/execute"
+  },
+  "wrapper-mongodb": {
+    "host": "localhost",
+    "port": 3003,
+    "protocol": "http",
+    "database": "mongodb_db",
+    "timeout": 5000,
+    "retryAttempts": 3,
+    "cqlEndpoint": "/cql/execute"
+  },
+  "wrapper-arxiv": {
+    "host": "localhost",
+    "port": 3004,
+    "protocol": "http",
+    "database": "arxiv_db",
+    "timeout": 5000,
+    "retryAttempts": 3,
+    "cqlEndpoint": "/cql/execute"
+  }
+}

@@ -1,49 +1,60 @@
+const LogManager = require('../managers/log-manager');
+const CQLExecutionManager = require('../managers/cql-execution-manager');
+const ReadFileService = require('../services/readfile-service');
+const { configFilePaths } = require('../config/config');
 const Logger = require('../services/logger');
-const CqlExecuteService = require('../services/cql-execute-service');
 
 class CqlExecuteController {
   constructor() {
     this.result = { success: false, errors: [] };
-    this.service = new CqlExecuteService();
+    this.logManager = new LogManager();
+    this.executionManager = new CQLExecutionManager();
   }
 
   async executeQuery(req) {
     try {
-      await this.service.loadConfigFiles();
-      if (this.service.errors.length > 0) {
-        this.result.errors = this.service.errors;
-        return;
-      }
-
-      this.validateRequest(req);
-
+      await this._getCqlRules();
+      this._validateRequest(req);
       if (this.result.errors.length > 0) {
-        Logger.logError(`Validation errors: ${this.result.errors.join(', ')}`);
         return this.result;
       }
 
       const query = req.body;
-      Logger.logRequestMetadata(this._hideSensitiveInfo(query.req_meta));
+      const execResult = await this.executionManager.executeCqlQuery(query);
 
-      await this.service.executeCqlQuery(query);
+      if (!execResult.success) {
+        this.result.errors = execResult.errors;
+        return this.result;
+      }
 
-      if (this.service.errors.length > 0) {
-        this.result.errors = this.service.errors;
-        Logger.logError(
-          `CQL Execution errors: ${this.result.errors.join(', ')}`
-        );
-      } else {
-        this.result.success = true;
-        this.result.data = this.service.formattedQuery;
+      this.result.success = true;
+      this.result.data = execResult.data;
+
+      // Log request metadata
+      if (query.req_meta) {
+        const safeMeta = this._hideSensitiveInfo(query.req_meta);
+        this.logManager.logRequestMetadata(safeMeta);
       }
     } catch (error) {
-      Logger.logError(`Error in CQL execution: ${error.message}`);
+      this.result.errors.push(`Internal server error: ${error.message}`);
+    }
+    return this.result;
+  }
 
-      this.result.errors = [error.message];
+  async _getCqlRules() {
+    const filesToRead = [{ path: configFilePaths.CQL_PATH, isJson: true }];
+    const result = await ReadFileService.readFile(filesToRead);
+    for (const res of result) {
+      if (!res.success) {
+        this.result.errors.push(res.error);
+        return this.result;
+      } else {
+        this.cqlRules = res.value;
+      }
     }
   }
 
-  validateRequest(req) {
+  _validateRequest(req) {
     /*
         Format of the query object:
         {
@@ -74,15 +85,16 @@ class CqlExecuteController {
       return;
     }
 
-    if (!query[this.service.requiredKey]) {
-      this.result.errors.push(`'Missing field: ${this.service.requiredKey}`);
+    const requiredKey = this.cqlRules.cqlKeys[0];
+
+    if (!query[requiredKey]) {
+      this.result.errors.push(`'Missing field: ${requiredKey}`);
       return;
     }
 
-    const method = query[this.service.requiredKey].toUpperCase();
+    const method = query[requiredKey].toUpperCase();
     const requiredFields =
-      this.service.cqlRules[this.service.requiredKey][method]
-        .requiredParameters;
+      this.cqlRules[requiredKey][method].requiredParameters;
 
     if (!requiredFields) {
       this.result.errors.push(`Unsupported query method: ${method}`);

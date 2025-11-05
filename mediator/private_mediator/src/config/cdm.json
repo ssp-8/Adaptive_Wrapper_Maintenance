@@ -60,7 +60,7 @@
     "Article": {
       "type": "object",
       "description": "A scholarly paper, aggregated from PostgreSQL, MongoDB, and arXiv API.",
-      "dataSources": ["wrapper-postgresql", "wrapper-mongodb", "arxiv-api"],
+      "dataSources": ["wrapper-postgresql", "wrapper-mongodb", "wrapper-arxiv"],
       "attributes": [
         "articleId",
         "title",
@@ -133,7 +133,14 @@
       "type": "object",
       "description": "A specific action taken by a User on an Article (from MySQL).",
       "dataSources": ["wrapper-mysql"],
-      "attributes": ["actionId", "userId", "articleId", "type", "timestamp"],
+      "attributes": [
+        "actionId",
+        "userId",
+        "articleId",
+        "type",
+        "timestamp",
+        "status"
+      ],
       "properties": {
         "actionId": {
           "type": "string",
@@ -156,6 +163,11 @@
           "type": "string",
           "format": "date-time",
           "description": "When the action occurred."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "failed", "deleted", "success"],
+          "description": "Status of the action record."
         }
       },
       "required": ["actionId", "userId", "articleId", "type", "timestamp"]

@@ -22,6 +22,7 @@ const routePaths = {
 const configFilePaths = {
   CQL_PATH: path.join(PROJECT_ROOT, 'config', 'cql-rules.json'),
   CDM_PATH: path.join(PROJECT_ROOT, 'config', 'cdm.json'),
+  WRAPPER_CONFIG_PATH: path.join(PROJECT_ROOT, 'config', 'wrapper-config.json'),
 };
 
 module.exports = {

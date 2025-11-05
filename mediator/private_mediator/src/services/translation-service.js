@@ -1,22 +1,25 @@
 const fs = require('fs');
 const { configFilePaths } = require('../config/config');
 const Logger = require('./logger');
+const readFileService = require('./readfile-service');
 
-const cqlRulesPath = configFilePaths.CQL_PATH;
-const cdmPath = configFilePaths.CDM_PATH;
-
-class CqlExecuteService {
-  constructor() {
-    this.cqlRules = undefined;
-    this.cdmSchema = undefined;
+class CqlTranslationService {
+  constructor(cqlRules, cdmSchema) {
+    this.cqlRules = cqlRules;
+    this.cdmSchema = cdmSchema;
     this.errors = [];
     this.formattedQuery = {};
-    this.requiredKey = undefined;
+    this.requiredKey = cqlRules ? cqlRules.cqlKeys[0] : null;
   }
 
-  async executeCqlQuery(query = {}) {
+  async translateQuery(query = {}) {
     this.errors = [];
     this.formattedQuery = {};
+
+    if (!this.cqlRules || !this.cdmSchema) {
+      this.errors.push('CQL rules or CDM schema not loaded');
+      return { errors: this.errors, formattedQuery: null, success: false };
+    }
 
     const httpMethod = query[this.requiredKey];
     const methodDef = this.cqlRules[this.requiredKey][httpMethod];
@@ -27,34 +30,40 @@ class CqlExecuteService {
     const attributes =
       operation === 'SELECT' ? query[this.cqlRules.cqlSelectionKey] : undefined;
 
-    this.validateEntity(entity, attributes);
-    if (this.errors.length > 0) return;
+    const isValid = this._isEntityAndAttrValid(entity, attributes);
+    if (!isValid || this.errors.length > 0)
+      return { errors: this.errors, formattedQuery: null, success: false };
 
     const entitySchema = this.cdmSchema.definitions[entity];
     const cqlKeys = this.cqlRules.cqlKeys;
 
     for (const key of cqlKeys) {
       if (!query[key]) continue;
-      this.formatKey(key, query[key], entitySchema);
-      if (this.errors.length) break;
+      const keyValue = this._formatKey(key, query[key], entitySchema);
+      if (!keyValue || this.errors.length) break;
+      else this.formattedQuery[key] = keyValue;
     }
 
-    return;
+    return {
+      errors: this.errors,
+      formattedQuery: this.formattedQuery,
+      success: this.errors.length === 0,
+    };
   }
 
-  validateEntity(entity, attributes) {
+  _isEntityAndAttrValid(entity, attributes) {
     if (!entity) {
       this.errors.push('Entity is required');
-      return;
+      return false;
     }
 
     const def = this.cdmSchema.definitions[entity];
     if (!def) {
       this.errors.push(`Entity doesn't exist: ${entity}`);
-      return;
+      return false;
     }
 
-    if (!attributes) return;
+    if (!attributes) return true;
 
     const attrs = Array.isArray(attributes)
       ? attributes
@@ -68,17 +77,18 @@ class CqlExecuteService {
     attrs.forEach(attr => {
       if (attr != '*' && !allowedAttributes.includes(attr)) {
         this.errors.push(`Attribute doesn't exist: ${attr}`);
+        return false;
       }
     });
+    return true;
   }
 
-  formatKey(key, value, schema = {}) {
+  _formatKey(key, value, schema = {}) {
     const keyFormat = this.cqlRules[key];
 
     // If no special rule for this key, copy as-is
     if (!keyFormat) {
-      this.formattedQuery[key] = value;
-      return;
+      return value;
     }
 
     if (key === 'sort') {
@@ -95,17 +105,16 @@ class CqlExecuteService {
         const [attr, order = 'asc'] = part.split(':').map(p => p.trim());
         if (!schema.attributes || !schema.attributes.includes(attr)) {
           this.errors.push(`Sort attribute unknown: ${attr}`);
-          return;
+          return false;
         }
         if (!orders[order]) {
           this.errors.push(`Sort order unknown: ${order}`);
-          return;
+          return false;
         }
         out.push({ attribute: attr, order });
       }
 
-      this.formattedQuery[key] = out;
-      return;
+      return out;
     }
 
     if (key === 'filter') {
@@ -129,7 +138,7 @@ class CqlExecuteService {
             const val = cond.slice(idx + comp.length).trim();
             if (!schema.attributes || !schema.attributes.includes(attr)) {
               this.errors.push(`Filter attribute unknown: ${attr}`);
-              return;
+              return false;
             }
             out.push({ attribute: attr, comparator: comp, value: val });
             matched = true;
@@ -138,63 +147,25 @@ class CqlExecuteService {
         }
         if (!matched) {
           this.errors.push(`Invalid filter condition: ${cond}`);
-          return;
+          return false;
         }
       }
 
       if (out.length === 0) {
         this.errors.push('Invalid filter');
       } else {
-        this.formattedQuery[key] = out;
+        return out;
       }
-      return;
+      return false;
     }
 
-    // Default: map value via rules (if mapping exists) else pass-through
-    const mapped = keyFormat[value];
-    this.formattedQuery[key] = mapped ? mapped.name : value;
-  }
-
-  async loadConfigFiles() {
-    this.errors = this.errors || [];
-    const reads = await Promise.allSettled([
-      fs.promises.readFile(cqlRulesPath, 'utf8'),
-      fs.promises.readFile(cdmPath, 'utf8'),
-    ]);
-
-    // CQL rules
-    if (reads[0].status === 'fulfilled') {
-      try {
-        this.cqlRules = JSON.parse(reads[0].value);
-        this.requiredKey = this.cqlRules.cqlKeys[0];
-      } catch (err) {
-        Logger.logError(`Error parsing CQL rules JSON: ${err.message}`);
-        this.errors.push(`CQL parse error: ${err.message}`);
-      }
+    if (keyFormat[value]) {
+      return keyFormat[value].name;
     } else {
-      const reason = reads[0].reason;
-      Logger.logError(
-        `Error reading CQL rules file: ${reason?.message || reason}`
-      );
-      this.errors.push(`CQL read error: ${reason?.message || reason}`);
-    }
-
-    // CDM schema
-    if (reads[1].status === 'fulfilled') {
-      try {
-        this.cdmSchema = JSON.parse(reads[1].value);
-      } catch (err) {
-        Logger.logError(`Error parsing CDM schema JSON: ${err.message}`);
-        this.errors.push(`CDM parse error: ${err.message}`);
-      }
-    } else {
-      const reason = reads[1].reason;
-      Logger.logError(
-        `Error reading CDM schema file: ${reason?.message || reason}`
-      );
-      this.errors.push(`CDM read error: ${reason?.message || reason}`);
+      this.errors.push(`Invalid value for ${key}: ${value}`);
+      return false;
     }
   }
 }
 
-module.exports = CqlExecuteService;
+module.exports = CqlTranslationService;
