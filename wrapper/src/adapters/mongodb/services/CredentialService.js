@@ -9,6 +9,7 @@ class CredentialService {
       database: process.env.DB_DATABASE,
       host: process.env.DB_HOST,
       port: process.env.DB_PORT,
+      authSource: process.env.DB_AUTH_SOURCE || "admin",
     };
   }
 }

@@ -1,175 +1,161 @@
 class TranslatorService {
-  translateToSqlQuery(cqlQuery) {
-    this.entityModel = this._getEntityModel(cqlQuery.entity);
-    this.paramIndex = 1;
-    const params = [];
-    let sql = "";
-
-    sql += this._getOperationPrefix(cqlQuery.operation);
-    sql += this._handleEntity(cqlQuery.operation, cqlQuery.selection);
-    sql += this._handlePayload(cqlQuery.operation, cqlQuery.payload, params);
-    sql += this._handleFilter(cqlQuery.filter, params);
-    sql += this._handleSort(cqlQuery.sort);
-    sql += this._handleLimit(cqlQuery.limit);
-
-    return { query: sql.trim(), params };
-  }
-
-  translateResult(sqlResult) {
-    const results = Array.isArray(sqlResult) ? sqlResult : [sqlResult];
-
-    return results
-      .map((row) => {
-        const translatedRow = {};
-        for (const [key, value] of Object.entries(row)) {
-          const attr = Object.keys(this.entityModel.mapping).find(
-            (k) => this.entityModel.mapping[k] === key
-          );
-
-          translatedRow[attr || key] = value;
-        }
-        return translatedRow;
-      })
-      .filter((row) => Object.keys(row).length > 0);
-  }
-
-  _getEntityModel(entity) {
-    try {
-      const modelName = entity.charAt(0).toUpperCase() + entity.slice(1);
-      return require(`../models/${modelName}Model`);
-    } catch (e) {
-      console.error(`Error loading model for entity: ${entity}`, e);
-      throw new Error(`Model not found for entity: ${entity}`);
-    }
-  }
-
-  _getOperationPrefix(op) {
-    const ops = {
-      SELECT: "SELECT",
-      INSERT: "INSERT INTO",
-      DELETE: "DELETE FROM",
-      UPDATE: "UPDATE",
-    };
-    return ops[op] ? `${ops[op]} ` : "";
-  }
-
-  _handleEntity(op, attrs) {
-    if (op === "SELECT") {
-      const cols = attrs
-        .split(",")
-        .map((a) => {
-          const attr = a.trim();
-          if (attr === "*") return "*";
-
-          const col = this.entityModel.mapping[attr];
-          return col ? `${col} AS ${attr}` : null;
-        })
-        .filter((col) => col !== null);
-
-      return `${cols.join(", ")} FROM ${this.entityModel.tableName} `;
-    }
-    return `${this.entityModel.tableName} `;
-  }
-
-  _handlePayload(op, payload, params) {
-    if (!payload) return "";
-    const { columns, placeholders } = this._extractColumnsAndValues(
-      payload,
-      params
+  translateQuery(cqlQuery) {
+    const { mongooseModel, entityModel } = this._getEntityModel(
+      cqlQuery.entity
     );
+    this.entityModel = entityModel;
+    this.mongooseModel = mongooseModel;
 
-    if (op === "INSERT")
-      return `(${columns.join(", ")}) VALUES (${placeholders.join(", ")}) `;
-
-    if (op === "UPDATE")
-      return `SET ${columns
-        .map((c, i) => `${c} = ${placeholders[i]}`)
-        .join(", ")} `;
-
-    return "";
-  }
-
-  _extractColumnsAndValues(payload, params) {
-    const columns = [],
-      placeholders = [];
-
-    for (const key of Object.keys(payload)) {
-      if (!this.entityModel.mapping[key]) continue;
-
-      columns.push(this.entityModel.mapping[key]);
-
-      placeholders.push(`$${this.paramIndex++}`);
-      params.push(payload[key]);
+    const operation = cqlQuery.operation;
+    if (operation === "SELECT") {
+      return this._translateSelectQuery(cqlQuery);
+    } else if (operation === "INSERT") {
+      return this._translateInsertQuery(cqlQuery);
+    } else if (operation === "UPDATE") {
+      return this._translateUpdateQuery(cqlQuery);
+    } else if (operation === "DELETE") {
+      return this._translateDeleteQuery(cqlQuery);
+    } else {
+      throw new Error(`Unsupported operation: ${operation}`);
     }
-    return { columns, placeholders };
   }
 
-  _handleSort(sort = []) {
-    if (!Array.isArray(sort) || sort.length === 0) return "";
-    return `ORDER BY ${sort
-      .map((s) => `${this.entityModel.mapping[s.attribute]} ${s.order}`)
-      .join(", ")} `;
+  _translateSelectQuery(cqlQuery) {
+    const translatedFilter = this._handleFilter(cqlQuery.filter);
+    const translatedSort = this._handleSort(cqlQuery.sort);
+    const limit = cqlQuery.limit ? parseInt(cqlQuery.limit, 10) : null;
+    const translatedSelection = this._handleSelection(cqlQuery.selection);
+    return this.mongooseModel
+      .find(translatedFilter, translatedSelection)
+      .sort(translatedSort)
+      .limit(limit);
   }
-  _handleFilter(filters = [], params) {
-    if (!Array.isArray(filters) || filters.length === 0) return "";
 
-    const conds = filters.map((f) => {
+  _translateInsertQuery(cqlQuery) {
+    const translatedPayload = this._translatePayload(cqlQuery.payload);
+    return this.mongooseModel.insertMany([translatedPayload]);
+  }
+
+  _translateUpdateQuery(cqlQuery) {
+    const translatedPayload = this._translatePayload(cqlQuery.payload);
+    const translatedFilter = this._handleFilter(cqlQuery.filter);
+    return this.mongooseModel.updateMany(translatedFilter, {
+      $set: translatedPayload,
+    });
+  }
+
+  _translateDeleteQuery(cqlQuery) {
+    const translatedFilter = this._handleFilter(cqlQuery.filter);
+    return this.mongooseModel.deleteMany(translatedFilter);
+  }
+
+  _handleSelection(selection) {
+    if (!selection || selection.trim() === "*") return null;
+    const fields = selection
+      .split(",")
+      .map((attr) => this.entityModel.mapping[attr.trim()])
+      .filter((field) => field !== undefined);
+    return fields.length > 0 ? fields.join(" ") : null;
+  }
+
+  _handleFilter(filters = []) {
+    if (!Array.isArray(filters) || filters.length === 0) return {};
+    const query = {};
+    filters.forEach((f) => {
       const col = this.entityModel.mapping[f.attribute];
       const comp = (f.comparator || "=").toUpperCase();
       const val = this._normalizeValue(f.value);
-
       if (val === null && (comp === "IS" || comp === "IS NOT")) {
-        return `${col} ${comp} NULL`;
+        query[col] = comp === "IS" ? null : { $ne: null };
+        return;
       }
-
-      if (Array.isArray(val) && (comp === "IN" || comp === "NOT IN")) {
-        const ph = val.map(() => `$${this.paramIndex++}`).join(", ");
-        params.push(...val);
-        return `${col} ${comp} (${ph})`;
+      switch (comp) {
+        case "=":
+          query[col] = val;
+          break;
+        case "!=":
+          query[col] = { $ne: val };
+          break;
+        case ">":
+          query[col] = { $gt: val };
+          break;
+        case "<":
+          query[col] = { $lt: val };
+          break;
+        case ">=":
+          query[col] = { $gte: val };
+          break;
+        case "<=":
+          query[col] = { $lte: val };
+          break;
+        case "IN":
+          query[col] = { $in: Array.isArray(val) ? val : [val] };
+          break;
+        case "NOT IN":
+          query[col] = { $nin: Array.isArray(val) ? val : [val] };
+          break;
+        default:
+          throw new Error(`Unsupported comparator: ${comp}`);
       }
-
-      if (Array.isArray(val)) {
-        if (val.length === 1) {
-          params.push(val[0]);
-          const p = `$${this.paramIndex++}`;
-          return `${p} = ANY(${col})`;
-        } else {
-          const ph = val.map(() => `$${this.paramIndex++}`).join(", ");
-          params.push(...val);
-          return `${col} @> ARRAY[${ph}]`;
-        }
-      }
-
-      params.push(val);
-      const p = `$${this.paramIndex++}`;
-      return `${col} ${comp} ${p}`;
     });
-
-    return `WHERE ${conds.join(" AND ")} `;
+    return query;
   }
 
   _normalizeValue(value) {
     if (Array.isArray(value)) return value;
-
     if (typeof value === "string" && value.trim().startsWith("[")) {
       try {
         const jsonSafe = value.replace(/'/g, '"');
         const parsed = JSON.parse(jsonSafe);
         if (Array.isArray(parsed)) return parsed;
-      } catch (err) {
-        console.warn("Could not parse array-like string:", value);
-      }
+      } catch {}
     }
-
-    // Otherwise, return as-is
     return value;
   }
 
   _handleLimit(limit) {
-    if (limit === undefined || limit === null) return "";
-    const num = Number(limit);
-    if (!Number.isFinite(num)) return "";
-    return `LIMIT ${num} `;
+    return limit === undefined || limit === null ? 0 : parseInt(limit, 10);
+  }
+
+  _handleSort(sort = []) {
+    if (!Array.isArray(sort) || sort.length === 0) return {};
+    const sortObj = {};
+    sort.forEach((s) => {
+      const col = this.entityModel.mapping[s.attribute];
+      const order = s.order.toLowerCase() === "asc" ? 1 : -1;
+      sortObj[col] = order;
+    });
+    return sortObj;
+  }
+
+  translateResult(sqlResult) {
+    console.log("Translated MongoDB Result:", sqlResult);
+    return sqlResult;
+  }
+
+  _getEntityModel(entity) {
+    try {
+      const modelName = entity.charAt(0).toUpperCase() + entity.slice(1);
+      const models = require(`../models/${modelName}Model`);
+
+      return {
+        mongooseModel: models[modelName],
+        entityModel: models[`${modelName}Model`],
+      };
+    } catch (e) {
+      throw new Error(
+        `Model not found for entity: ${entity} with error ${e.message}`
+      );
+    }
+  }
+
+  _translatePayload(payload) {
+    const translatedPayload = {};
+    for (const key of Object.keys(payload)) {
+      const translatedAttr = this.entityModel.mapping[key];
+      if (translatedAttr) translatedPayload[translatedAttr] = payload[key];
+    }
+    return translatedPayload;
   }
 }
 

@@ -8,14 +8,10 @@ class Adapter {
   }
   async executeQuery(query) {
     try {
-      const { query: translatedQuery, params } =
-        this.translator.translateToSqlQuery(query);
+      const operation = this.translator.translateQuery(query);
 
       // connection and disconnection is handled inside executeQuery of DatabaseDriver
-      const executionResult = await this.dbDriver.executeQuery(
-        translatedQuery,
-        params
-      );
+      const executionResult = await this.dbDriver.executeQuery(operation);
 
       if (!executionResult.success) {
         return { success: false, errors: executionResult.errors };

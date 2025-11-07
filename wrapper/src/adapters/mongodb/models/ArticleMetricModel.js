@@ -1,23 +1,28 @@
-// src/wrapper-postgresql/adapters/models/ArticleMetricModel.js
+const mongoose = require("mongoose");
+
+const articleMetricSchema = new mongoose.Schema(
+  {
+    views: { type: Number, default: 0 },
+    downloads: { type: Number, default: 0 },
+    citations: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
 
 const ArticleMetricModel = {
-  tableName: "article_metric", // The actual table name in PostgreSQL
+  tableName: "ArticleMetric",
 
-  // CDM Attribute Name (CamelCase) : SQL Column Name (snake_case)
   mapping: {
-    id: "id", // Primary key for the metric table itself
     views: "views",
     downloads: "downloads",
-    citationCount: "citation_count", // CDM 'citationCount' maps to SQL 'citation_count'
-    lastUpdated: "last_updated", // CDM 'lastUpdated' maps to SQL 'last_updated'
+    citations: "citations",
   },
 
-  // Defines the Primary Key attribute for this entity
-  // This is used internally by the Wrapper, not typically exposed to the Mediator directly
-  primaryKey: "id",
+  primaryKey: null,
 
-  // All attributes exposed to the Mediator/CDM (excluding the internal ID)
-  attributes: ["views", "downloads", "citationCount", "lastUpdated"],
+  attributes: ["views", "downloads", "citations"],
 };
 
-module.exports = ArticleMetricModel;
+const ArticleMetric = mongoose.model("ArticleMetric", articleMetricSchema);
+
+module.exports = { ArticleMetric, ArticleMetricModel, articleMetricSchema };
