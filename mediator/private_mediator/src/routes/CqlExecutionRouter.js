@@ -1,13 +1,13 @@
 const express = require('express');
 
-const Logger = require('../services/logger');
-const CqlExecuteController = require('../controllers/cql-execute-controller');
+const Logger = require('../services/Logger');
+const ExecutionController = require('../controllers/QueryExecutionController');
 
-const router = express.Router();
+const CqlExecutionRouter = express.Router();
 
-router.post('/', async (req, res) => {
+CqlExecutionRouter.post('/', async (req, res) => {
   try {
-    const controller = new CqlExecuteController();
+    const controller = new ExecutionController();
     await controller.executeQuery(req);
     const result = controller.result;
     res.status(result.success ? 200 : 500).json(result);
@@ -17,4 +17,4 @@ router.post('/', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = CqlExecutionRouter;

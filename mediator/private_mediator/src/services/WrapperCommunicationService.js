@@ -36,11 +36,7 @@ class WrapperCommunicationService {
           );
         }
       } else {
-        errors.push(
-          `Data source ${index} failed: ${
-            result.reason?.message || result.reason
-          }`
-        );
+        errors.push('Internal Server Error');
       }
     });
     return {
@@ -65,7 +61,7 @@ class WrapperCommunicationService {
     wrapperRequest.timeout = wrapperConfig.timeout || 5000;
     wrapperRequest.retryAttempts = wrapperConfig.retryAttempts || 2;
 
-    wrapperRequest.body = formattedQuery;
+    wrapperRequest.body = { query: formattedQuery };
     return wrapperRequest;
   }
 }

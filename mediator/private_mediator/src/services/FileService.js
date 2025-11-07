@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-class ReadFileService {
+class FileService {
   static async readFile(files) {
     try {
       const reads = await Promise.allSettled(
@@ -42,4 +42,4 @@ class ReadFileService {
   }
 }
 
-module.exports = ReadFileService;
+module.exports = FileService;

@@ -1,15 +1,15 @@
-const LogManager = require('../managers/log-manager');
-
-class CqlExecutionService {
+class ExecutionService {
   static async executeWrapperRequest(wrapperRequest) {
     const numRetries = wrapperRequest.retryAttempts;
     let attempts = 0;
     while (attempts <= numRetries) {
       try {
-        const response = await fetchWithTimeout(wrapperRequest);
+        const response = await ExecutionService.fetchWithTimeout(
+          wrapperRequest
+        );
         if (response.aborted) {
           attempts++;
-        } else if (!response.ok) {
+        } else if (!response.success) {
           return {
             success: false,
             data: null,
@@ -18,8 +18,7 @@ class CqlExecutionService {
             ],
           };
         } else {
-          const data = await response.json();
-          return { success: true, data: data, errors: [] };
+          return { success: true, data: response.data, errors: [] };
         }
       } catch (error) {
         attempts++;
@@ -32,7 +31,7 @@ class CqlExecutionService {
     };
   }
 
-  async fetchWithTimeout(wrapperRequest) {
+  static async fetchWithTimeout(wrapperRequest) {
     const abortController = new AbortController();
     const signal = abortController.signal;
     const timeoutId = setTimeout(
@@ -47,14 +46,23 @@ class CqlExecutionService {
         body: JSON.stringify(wrapperRequest.body),
         signal: signal,
       });
-
       clearTimeout(timeoutId);
-      return { ...response, aborted: false };
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          aborted: false,
+          success: false,
+          errors: [
+            `HTTP error! status: ${response.status}, message: ${errorText}`,
+          ],
+        };
+      }
+      return { ...(await response.json()), aborted: false };
     } catch (error) {
       clearTimeout(timeoutId);
-      return { aborted: true };
+      return { aborted: true, success: false, errors: [error.message] };
     }
   }
 }
 
-module.exports = CqlExecutionService;
+module.exports = ExecutionService;

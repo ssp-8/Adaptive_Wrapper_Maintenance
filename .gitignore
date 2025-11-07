@@ -1,3 +1,5 @@
 # Ignore node_modules inside the mediator folder
 mediator/node_modules/
 mediator/.vscode/
+wrapper/node_modules/
+data/

@@ -2,7 +2,7 @@
   "wrapperConfigVersion": "1.0",
   "wrappers": [
     "wrapper-mysql",
-    "wrapper-postgresql",
+    "wrapper-postgres",
     "wrapper-mongodb",
     "wrapper-arxiv"
   ],
@@ -16,7 +16,7 @@
     "retryAttempts": 3,
     "cqlEndpoint": "/cql/execute"
   },
-  "wrapper-postgresql": {
+  "wrapper-postgres": {
     "host": "localhost",
     "port": 3002,
     "protocol": "http",

@@ -1,12 +1,12 @@
-const CqlTranslationService = require('../services/translation-service');
-const CqlExecutionService = require('../services/execution-service');
-const WrapperCommunicationService = require('../services/wrapper-communication-service');
-const ReadFileService = require('../services/readfile-service');
-const Logger = require('../services/logger');
+const CqlTranslationService = require('../services/TranslationService');
+const CqlExecutionService = require('../services/ExecutionService');
+const WrapperCommunicationService = require('../services/WrapperCommunicationService');
+const ReadFileService = require('../services/FileService');
+const Logger = require('../services/Logger');
 
 const { configFilePaths } = require('../config/config');
 
-class CQLExecutionManager {
+class QueryExecutionManager {
   constructor() {
     this.cqlRules = undefined;
     this.cdmSchema = undefined;
@@ -38,6 +38,9 @@ class CQLExecutionManager {
 
     const { wrapperRequests, dataSources } =
       wrapperService.prepareWrapperRequests(formattedQuery);
+
+    console.log('Prepared wrapper requests:', wrapperRequests);
+    console.log('Data sources to query:', dataSources);
 
     const executionPromises = dataSources.map((ds, index) => {
       const wrapperRequest = wrapperRequests[index];
@@ -84,4 +87,4 @@ class CQLExecutionManager {
   }
 }
 
-module.exports = CQLExecutionManager;
+module.exports = QueryExecutionManager;

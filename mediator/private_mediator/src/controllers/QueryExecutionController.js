@@ -1,14 +1,14 @@
-const LogManager = require('../managers/log-manager');
-const CQLExecutionManager = require('../managers/cql-execution-manager');
-const ReadFileService = require('../services/readfile-service');
+const LogManager = require('../managers/LogManager');
+const QueryExecutionManager = require('../managers/QueryExecutionManager');
+const ReadFileService = require('../services/FileService');
 const { configFilePaths } = require('../config/config');
-const Logger = require('../services/logger');
+const Logger = require('../services/Logger');
 
-class CqlExecuteController {
+class ExecutionController {
   constructor() {
     this.result = { success: false, errors: [] };
     this.logManager = new LogManager();
-    this.executionManager = new CQLExecutionManager();
+    this.executionManager = new QueryExecutionManager();
   }
 
   async executeQuery(req) {
@@ -122,4 +122,4 @@ class CqlExecuteController {
   }
 }
 
-module.exports = CqlExecuteController;
+module.exports = ExecutionController;

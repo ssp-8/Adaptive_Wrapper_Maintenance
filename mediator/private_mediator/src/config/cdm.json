@@ -37,8 +37,8 @@
     },
     "ArticleMetric": {
       "type": "object",
-      "description": "Analytical metrics associated with an Article (from PostgreSQL).",
-      "dataSources": ["wrapper-postgresql"],
+      "description": "Analytical metrics associated with an Article (from Postgres).",
+      "dataSources": ["wrapper-postgres"],
       "attributes": ["views", "downloads", "citationCount", "lastUpdated"],
       "properties": {
         "views": {
@@ -59,8 +59,8 @@
     },
     "Article": {
       "type": "object",
-      "description": "A scholarly paper, aggregated from PostgreSQL, MongoDB, and arXiv API.",
-      "dataSources": ["wrapper-postgresql", "wrapper-mongodb", "wrapper-arxiv"],
+      "description": "A scholarly paper, aggregated from Postgres, MongoDB, and arXiv API.",
+      "dataSources": ["wrapper-postgres", "wrapper-mongodb", "wrapper-arxiv"],
       "attributes": [
         "articleId",
         "title",

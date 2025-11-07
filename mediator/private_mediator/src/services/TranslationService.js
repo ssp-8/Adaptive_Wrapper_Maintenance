@@ -1,9 +1,4 @@
-const fs = require('fs');
-const { configFilePaths } = require('../config/config');
-const Logger = require('./logger');
-const readFileService = require('./readfile-service');
-
-class CqlTranslationService {
+class TranslationService {
   constructor(cqlRules, cdmSchema) {
     this.cqlRules = cqlRules;
     this.cdmSchema = cdmSchema;
@@ -44,6 +39,7 @@ class CqlTranslationService {
       else this.formattedQuery[key] = keyValue;
     }
 
+    console.log('Formatted Query:', this.formattedQuery);
     return {
       errors: this.errors,
       formattedQuery: this.formattedQuery,
@@ -89,83 +85,85 @@ class CqlTranslationService {
     // If no special rule for this key, copy as-is
     if (!keyFormat) {
       return value;
-    }
-
-    if (key === 'sort') {
-      // Expected format: "attr1:asc,attr2:desc"
-      const parts = String(value)
-        .split(',')
-        .map(p => p.trim())
-        .filter(Boolean);
-
-      const orders = this.cqlRules.sort || {};
-      const out = [];
-
-      for (const part of parts) {
-        const [attr, order = 'asc'] = part.split(':').map(p => p.trim());
-        if (!schema.attributes || !schema.attributes.includes(attr)) {
-          this.errors.push(`Sort attribute unknown: ${attr}`);
-          return false;
-        }
-        if (!orders[order]) {
-          this.errors.push(`Sort order unknown: ${order}`);
-          return false;
-        }
-        out.push({ attribute: attr, order });
-      }
-
-      return out;
-    }
-
-    if (key === 'filter') {
-      // Find comparators longest-first to avoid partial matches (e.g. '>=' before '>')
-      const comparators = Object.keys(this.cqlRules.filter || {}).sort(
-        (a, b) => b.length - a.length
-      );
-      const conditions = String(value)
-        .split('&&')
-        .map(c => c.trim())
-        .filter(Boolean);
-
-      const out = [];
-
-      for (const cond of conditions) {
-        let matched = false;
-        for (const comp of comparators) {
-          const idx = cond.indexOf(comp);
-          if (idx > -1) {
-            const attr = cond.slice(0, idx).trim();
-            const val = cond.slice(idx + comp.length).trim();
-            if (!schema.attributes || !schema.attributes.includes(attr)) {
-              this.errors.push(`Filter attribute unknown: ${attr}`);
-              return false;
-            }
-            out.push({ attribute: attr, comparator: comp, value: val });
-            matched = true;
-            break;
-          }
-        }
-        if (!matched) {
-          this.errors.push(`Invalid filter condition: ${cond}`);
-          return false;
-        }
-      }
-
-      if (out.length === 0) {
-        this.errors.push('Invalid filter');
-      } else {
-        return out;
-      }
-      return false;
-    }
-
-    if (keyFormat[value]) {
+    } else if (key === 'sort') {
+      return this._handleSort(value, schema, keyFormat);
+    } else if (key === 'filter') {
+      return this._handleFilter(value, schema);
+    } else if (keyFormat[value]) {
       return keyFormat[value].name;
     } else {
       this.errors.push(`Invalid value for ${key}: ${value}`);
       return false;
     }
   }
-}
 
-module.exports = CqlTranslationService;
+  _handleSort(sortValue, schema, sortFormat) {
+    // Expected format: "attr1:asc,attr2:desc"
+    const parts = String(sortValue)
+      .split(',')
+      .map(p => p.trim())
+      .filter(Boolean);
+
+    const orders = this.cqlRules.sort || {};
+    const out = [];
+
+    for (const part of parts) {
+      const [attr, order = 'asc'] = part.split(':').map(p => p.trim());
+      if (!schema.attributes || !schema.attributes.includes(attr)) {
+        this.errors.push(`Sort attribute unknown: ${attr}`);
+        return false;
+      }
+      if (!orders[order]) {
+        this.errors.push(`Sort order unknown: ${order}`);
+        return false;
+      }
+      out.push({ attribute: attr, order });
+    }
+
+    return out;
+  }
+
+  _handleFilter(filterValue, schema) {
+    // Find comparators longest-first to avoid partial matches (e.g. '>=' before '>')
+    const comparators = Object.keys(this.cqlRules.filter || {}).sort(
+      (a, b) => b.length - a.length
+    );
+    const conditions = String(filterValue)
+      .split('&&')
+      .map(c => c.trim())
+      .filter(Boolean);
+
+    const out = [];
+
+    for (const cond of conditions) {
+      let matched = false;
+      console.log('Processing filter condition:', cond);
+      for (const comp of comparators) {
+        const idx = cond.indexOf(comp);
+        if (idx > -1) {
+          const attr = cond.slice(0, idx).trim();
+          const val = cond.slice(idx + comp.length).trim();
+          if (!schema.attributes || !schema.attributes.includes(attr)) {
+            this.errors.push(`Filter attribute unknown: ${attr}`);
+            return false;
+          }
+          out.push({ attribute: attr, comparator: comp, value: val });
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        this.errors.push(`Invalid filter condition: ${cond}`);
+        return false;
+      }
+    }
+
+    if (out.length === 0) {
+      this.errors.push('Invalid filter');
+    } else {
+      return out;
+    }
+    return false;
+  }
+}
+module.exports = TranslationService;
