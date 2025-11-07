@@ -59,8 +59,8 @@
     },
     "Article": {
       "type": "object",
-      "description": "A scholarly paper, aggregated from Postgres, MongoDB, and arXiv API.",
-      "dataSources": ["wrapper-postgres", "wrapper-mongodb", "wrapper-arxiv"],
+      "description": "A scholarly paper, aggregated from Postgres, MongoDB",
+      "dataSources": ["wrapper-postgres", "wrapper-mongodb"],
       "attributes": [
         "articleId",
         "title",

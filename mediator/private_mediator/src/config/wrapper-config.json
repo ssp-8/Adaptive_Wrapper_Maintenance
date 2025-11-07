@@ -1,11 +1,6 @@
 {
   "wrapperConfigVersion": "1.0",
-  "wrappers": [
-    "wrapper-mysql",
-    "wrapper-postgres",
-    "wrapper-mongodb",
-    "wrapper-arxiv"
-  ],
+  "wrappers": ["wrapper-mysql", "wrapper-postgres", "wrapper-mongodb"],
 
   "wrapper-mysql": {
     "host": "localhost",
@@ -30,15 +25,6 @@
     "port": 3003,
     "protocol": "http",
     "database": "mongodb_db",
-    "timeout": 5000,
-    "retryAttempts": 3,
-    "cqlEndpoint": "/cql/execute"
-  },
-  "wrapper-arxiv": {
-    "host": "localhost",
-    "port": 3004,
-    "protocol": "http",
-    "database": "arxiv_db",
     "timeout": 5000,
     "retryAttempts": 3,
     "cqlEndpoint": "/cql/execute"

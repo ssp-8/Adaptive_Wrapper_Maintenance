@@ -39,9 +39,12 @@ class WrapperCommunicationService {
         errors.push('Internal Server Error');
       }
     });
+    if (aggregatedData.length > 0) {
+      return { success: true, data: aggregatedData, errors: [] };
+    }
     return {
-      success: errors.length === 0,
-      data: aggregatedData,
+      success: false,
+      data: [],
       errors: errors,
     };
   }

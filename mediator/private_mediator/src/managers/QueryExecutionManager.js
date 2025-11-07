@@ -39,9 +39,6 @@ class QueryExecutionManager {
     const { wrapperRequests, dataSources } =
       wrapperService.prepareWrapperRequests(formattedQuery);
 
-    console.log('Prepared wrapper requests:', wrapperRequests);
-    console.log('Data sources to query:', dataSources);
-
     const executionPromises = dataSources.map((ds, index) => {
       const wrapperRequest = wrapperRequests[index];
       return CqlExecutionService.executeWrapperRequest(wrapperRequest);
