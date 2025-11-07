@@ -1,0 +1,116 @@
+{
+  "cqlVersion": "1.0.0",
+  "description": "Rules for the Common Query Language used between the Mediator and Wrappers, including CRUD and aggregation support.",
+
+  "cqlKeys": [
+    "operation",
+    "filter",
+    "aggregate",
+    "sort",
+    "limit",
+    "payload",
+    "entity",
+    "selection"
+  ],
+
+  "cqlEntityKey": "entity",
+  "cqlSelectionKey": "selection",
+
+  "operation": {
+    "GET": {
+      "name": "SELECT",
+      "purpose": "Retrieve data based on filters and selections.",
+      "requiredParameters": ["entity", "selection"],
+      "optionalParameters": ["filter", "aggregate", "sort", "limit"]
+    },
+    "POST": {
+      "name": "INSERT",
+      "purpose": "Insert a new record for the specified entity.",
+      "requiredParameters": ["entity", "payload"]
+    },
+    "PUT": {
+      "name": "UPDATE",
+      "purpose": "Update existing records matching the filter criteria.",
+      "requiredParameters": ["entity", "filter", "payload"]
+    },
+    "DELETE": {
+      "name": "DELETE",
+      "purpose": "Delete records matching the filter criteria.",
+      "requiredParameters": ["entity", "filter"]
+    }
+  },
+
+  "filter": {
+    "=": {
+      "name": "=",
+      "requiredParameters": ["field", "value"],
+      "description": "Equal to"
+    },
+    "!=": {
+      "name": "!=",
+      "requiredParameters": ["field", "value"],
+      "description": "Not equal to"
+    },
+    ">": {
+      "name": ">",
+      "requiredParameters": ["field", "value"],
+      "description": "Greater than (numeric or date)"
+    },
+    "<": {
+      "name": "<",
+      "requiredParameters": ["field", "value"],
+      "description": "Less than (numeric or date)"
+    },
+    ">=": {
+      "name": ">=",
+      "requiredParameters": ["field", "value"],
+      "description": "Greater than or equal to"
+    },
+    "<=": {
+      "name": "<=",
+      "requiredParameters": ["field", "value"],
+      "description": "Less than or equal to"
+    }
+  },
+
+  "aggregate": {
+    "COUNT": {
+      "name": "COUNT",
+      "requiredParameters": [],
+      "description": "Count the number of records"
+    },
+    "SUM": {
+      "name": "SUM",
+      "requiredParameters": [],
+      "description": "Sum of a numeric field"
+    },
+    "AVG": {
+      "name": "AVG",
+      "requiredParameters": [],
+      "description": "Average of a numeric field"
+    },
+    "MIN": {
+      "name": "MIN",
+      "requiredParameters": [],
+      "description": "Minimum value of a field"
+    },
+    "MAX": {
+      "name": "MAX",
+      "requiredParameters": [],
+      "description": "Maximum value of a field"
+    }
+  },
+
+  "sort": {
+    "ASC": {
+      "name": "ASC",
+      "requiredParameters": [],
+      "description": "Sort ascending"
+    },
+    "DESC": {
+      "name": "DESC",
+      "requiredParameters": [],
+      "description": "Sort descending"
+    }
+  }
+}
