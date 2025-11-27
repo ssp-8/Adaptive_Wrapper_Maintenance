@@ -18,6 +18,8 @@ const ArticleMetricModel = {
 
   // All attributes exposed to the Mediator/CDM (excluding the internal ID)
   attributes: ["views", "downloads", "citationCount", "lastUpdated"],
+
+  cdmName: "ArticleMetric", // The name of the entity in the CDM
 };
 
 module.exports = ArticleMetricModel;

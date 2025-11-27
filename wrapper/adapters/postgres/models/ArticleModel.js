@@ -8,7 +8,7 @@ const ArticleModel = {
   mapping: {
     articleId: "article_id",
     title: "title",
-    summary: "summary",
+    summary: "summaries",
     authors: "authors",
     categories: "categories",
     publishedDate: "published_date",

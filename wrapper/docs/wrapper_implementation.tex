@@ -1,0 +1,75 @@
+\subsection{Wrapper implementation}
+The wrapper is implemented as a modular, service-oriented component responsible for translating canonical queries and data-model concepts into backend-specific operations and returning normalized results.
+
+Key services and responsibilities:
+- Credential service: manages secure access to target data sources by obtaining and refreshing credentials and applying authentication to connections.
+- Translation service: converts canonical query expressions and conceptual data model elements into backend-specific query forms and response mappings; it is driven by configurable transformation rules to support extensibility.
+- Wrapper-info service: advertises the wrapper's capabilities and metadata to the mediator to enable dynamic discovery and capability negotiation.
+- File service: manages reading and persisting local configuration, mapping rules, and auxiliary data required at runtime.
+- Communication/Orchestration service: validates incoming requests, forwards translated operations to adapters, normalizes responses for the mediator, and propagates structured errors.
+
+Adapters encapsulate backend-specific logic and expose a common driver interface responsible for connection lifecycle, query execution, and result retrieval. The implementation uses asynchronous operations (Promises / async–await) and centralized logging to ensure non-blocking execution and traceability. Error handling separates configuration and translation errors from connectivity and runtime failures; failures are logged, retried when appropriate, cleaned up, and returned as standardized error responses to the mediator.
+
+Contract (concise): inputs are canonical query payloads and configuration parameters; outputs are normalized JSON results or structured error messages; primary failure modes include translation mismatches, malformed inputs, credential issues, and backend connectivity problems.
+
+\subsection{Mediator Implementation: The Core Abstraction Layer}
+
+We implement the basic Mediator-Wrapper Architecture (MWA) with the Mediator serving as the central \textbf{abstraction and routing layer}. It receives user queries, processes them against a unified model, and dispatches requests to the appropriate Wrappers. To support rapid maintenance and adaptability, the Mediator is functionally partitioned into two layers: the Public Mediator and the Private Mediator.
+
+\medskip
+	extbf{The Public Mediator} acts as the system's entry point, enforcing a uniform interface and isolating clients from internal changes. It is responsible for:
+
+\begin{itemize}
+	\item \textbf{Input Validation:} Ensures the incoming requests (via HTTP/JSON) conform to required syntactic and structural standards.
+	\item \textbf{Request Normalization:} Converts the external client request into a standardized, internal message format for backend consumption.
+\end{itemize}
+
+\medskip
+
+	extbf{Private Mediator (Backend Processing Unit)}
+
+The Private Mediator houses all complex query logic and coordination capabilities. Upon receiving the standardized request, it performs the core tasks:
+
+\begin{itemize}
+	\item \textbf{Query Translation:} Converts the standardized message into the \textbf{Common Query Language (CQL)}.
+	\item \textbf{Semantic Validation:} Checks the CQL query against the shared \textbf{Common Data Model (CDM)} to ensure validity and semantic correctness.
+	\item \textbf{Query Decomposition and Routing:} Identifies the necessary underlying data sources (Wrappers) based on the CDM and decomposes the query into sub-queries.
+	\item \textbf{Result Integration:} Sends sub-queries via the relevant Wrappers and merges the returned data into a single, unified result set.
+\end{itemize}
+
+\medskip
+
+	extbf{Internal Message Specification (Inter-Layer Protocol)}
+
+The communication between the two Mediator layers is governed by a strict \textbf{Internal Message Specification}. This protocol strips away external transport details (like HTTP) and represents the request as a clean, self-describing JSON structure. The key fields include \texttt{operation}, \texttt{entity}, filtering clauses (\texttt{filter}, \texttt{sort}, \texttt{limit}), and a metadata object (\texttt{req\_meta}) for context. A detailed example of this message structure is provided in \textbf{Appendix A}.
+
+\subsubsection{Role of CDM and CQL in Adaptability}
+
+The adaptability of the MWA relies fundamentally on the abstraction provided by two core constructs:
+
+\begin{itemize}
+	\item \textbf{Common Data Model (CDM):} A unified schema that defines the attribute names, data types, required properties, and relationships for all supported entities (\texttt{User}, \texttt{Article}, etc.). The CDM acts as the \textbf{single source of truth} for the system, allowing the Private Mediator to validate and route queries without relying on database-specific schemas.
+	\item \textbf{Common Query Language (CQL):} A JSON-based intermediate representation that standardizes query operations (CRUD, filtering, sorting, aggregation) across the entire system. By abstracting the query logic from native database syntax (SQL, Cypher, etc.), the CQL drastically \textbf{reduces the overhead during wrapper regeneration} when underlying schemas evolve.
+\end{itemize}
+
+Together, the two-tier Mediator design combined with the CDM and CQL ensures \textbf{modularity, testability, and scalability}, enabling the rapid detection and correction mechanisms described in the Adaptive Wrapper Maintenance framework.
+
+\medskip
+	extbf{Services and managers (mapped to implementation)}
+
+The Mediator's responsibilities are implemented across existing controllers, managers and services rather than as entirely separate, standalone components. The following maps the conceptual roles to their concrete implementations in the codebase:
+
+\begin{itemize}
+	\item \textbf{API / Gateway:} Realized by the routing and controller layer which handles transport concerns, request parsing and initial normalization.
+	\item \textbf{Validation (syntactic/structural):} Implemented in the controller's request validation logic which checks payload presence, required keys and basic request structure.
+	\item \textbf{Semantic validation (CDM checks):} Performed inside the translation/semantic layer which verifies entities, attributes and filter/sort expressions against the CDM.
+	\item \textbf{Translation Service:} Converts normalized internal messages into the intermediate CQL representation using configurable rules; it collects translation errors and produces a formatted query object.
+	\item \textbf{Routing and Decomposition:} Responsibility is shared: the execution manager determines which backends are needed and coordinates decomposition, while the wrapper communication logic prepares per-wrapper requests.
+	\item \textbf{Execution manager / Orchestration:} The manager component orchestrates sub-query execution, collects partial results, and applies execution policies (timeouts, retry attempts are honored per-wrapper).
+	\item \textbf{Result integration:} Implemented in the wrapper communication layer and manager code that aggregates, deduplicates and normalizes results returned by wrappers.
+	\item \textbf{Configuration and Rules:} Loading and exposure of CDM, CQL rules and wrapper configuration is performed by the file/config service(s) used at startup and request time.
+	\item \textbf{Logging and Audit:} Centralized logging and request-metadata recording are provided by the logging manager and logger service used throughout the mediator.
+	\item \textbf{Error classification and retry behaviour:} Error collection and standardized error objects are produced by controllers and managers; retry loops and timeout handling for wrapper calls are implemented in the execution service, with retry counts supplied from wrapper configuration by the wrapper communication logic.
+\end{itemize}
+
+These mappings reflect the current code structure: validation is split between controller-level checks and the translation service; retry and timeout policies are implemented in the execution service and driven by wrapper configuration; logging and file-based configuration loading are centralized in their respective services. This keeps the documentation accurate to the repository while preserving the conceptual roles used in the design.

@@ -6,15 +6,15 @@ class LogManager {
   }
 
   logInfo(message) {
-    this.logger.logInfo(message);
+    Logger.logInfo(message);
   }
 
   logError(message) {
-    this.logger.logError(message);
+    Logger.logError(message);
   }
 
   logRequestMetadata(requestMetadata) {
-    this.logger.logRequestMetadata(requestMetadata);
+    Logger.logRequestMetadata(requestMetadata);
   }
 }
 

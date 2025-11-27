@@ -1,8 +1,8 @@
 class WrapperCommunicationService {
-  constructor(cdmSchema, wrapperConfig, entityKey) {
+  constructor(cdmSchema, entityKey, wrapperLockController) {
     this.entityKey = entityKey;
     this.cdmSchema = cdmSchema;
-    this.wrapperConfig = wrapperConfig;
+    this.wrapperLockController = wrapperLockController;
   }
 
   prepareWrapperRequests(formattedQuery) {
@@ -13,7 +13,7 @@ class WrapperCommunicationService {
     for (const ds of dataSources) {
       const wrapperReq = this._prepareWrapperRequest(
         formattedQuery,
-        this.wrapperConfig[ds]
+        this.wrapperLockController.wrapperInfo[ds]
       );
       wrapperRequests.push(wrapperReq);
     }
@@ -50,7 +50,20 @@ class WrapperCommunicationService {
   }
 
   _determineDataSources(entity) {
-    return this.cdmSchema.definitions[entity].dataSources || [];
+    const dataSources = [];
+    console.log(this.cdmSchema.definitions[entity]);
+    console.log(
+      'Wrapper Info in WrapperCommunicationService:',
+      this.wrapperLockController.wrapperInfo
+    );
+    for (const ds of this.cdmSchema.definitions[entity].dataSources || []) {
+      const lockStatus = this.wrapperLockController.wrapperInfo[ds];
+      console.log('Lock status for', ds, ':', lockStatus);
+      if (lockStatus && lockStatus.enabled) {
+        dataSources.push(ds);
+      }
+    }
+    return dataSources;
   }
 
   _prepareWrapperRequest(formattedQuery, wrapperConfig) {

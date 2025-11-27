@@ -9,7 +9,8 @@
     "database": "mysql_db",
     "timeout": 5000,
     "retryAttempts": 3,
-    "cqlEndpoint": "/cql/execute"
+    "cqlEndpoint": "/cql/execute",
+    "enabled": true
   },
   "wrapper-postgres": {
     "host": "localhost",
@@ -18,7 +19,8 @@
     "database": "postgres_db",
     "timeout": 5000,
     "retryAttempts": 3,
-    "cqlEndpoint": "/cql/execute"
+    "cqlEndpoint": "/cql/execute",
+    "enabled": true
   },
   "wrapper-mongodb": {
     "host": "localhost",
@@ -27,6 +29,7 @@
     "database": "mongodb_db",
     "timeout": 5000,
     "retryAttempts": 3,
-    "cqlEndpoint": "/cql/execute"
+    "cqlEndpoint": "/cql/execute",
+    "enabled": true
   }
 }

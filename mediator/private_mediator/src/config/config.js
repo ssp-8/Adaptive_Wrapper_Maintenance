@@ -17,6 +17,7 @@ const mediatorConfig = {
 
 const routePaths = {
   CQL_EXECUTE: `/cql/execute`,
+  WRAPPER_LOCK: `/wrapper`,
 };
 
 const configFilePaths = {

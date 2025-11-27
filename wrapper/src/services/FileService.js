@@ -42,11 +42,11 @@ class FileService {
     }
   }
 
-  static async writeFile(filePath, data, encoding = "utf-8") {
+  static async writeFile(filePath, data, mode = "w", encoding = "utf-8") {
     try {
       const dir = path.dirname(filePath);
       await fs.promises.mkdir(dir, { recursive: true });
-      await fs.promises.writeFile(filePath, data, { encoding });
+      await fs.promises.writeFile(filePath, data, { encoding, flag: mode });
       return { success: true };
     } catch (error) {
       return {

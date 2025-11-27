@@ -13,13 +13,16 @@ function initializeAdapterStack(wrapperType) {
     const adapterPath = `./adapters/${type}/${type}Adapter`;
     const driverPath = `./adapters/${type}/db-driver/DatabaseDriver`;
     const translatorPath = `./adapters/${type}/services/TranslationService`;
+    const agentPath = `./agents/${type}/${type}Agent`;
 
     const SpecificAdapter = require(adapterPath);
     const DatabaseDriver = require(driverPath);
     const TranslatorService = require(translatorPath);
+    const SpecificAgent = require(agentPath);
 
     const translatorInstance = new TranslatorService();
     const dbDriverInstance = new DatabaseDriver();
+    const agentInstance = new SpecificAgent(dbDriverInstance);
 
     const adapterInstance = new SpecificAdapter(
       translatorInstance,

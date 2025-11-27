@@ -7,10 +7,10 @@ const Logger = require('../services/Logger');
 const { configFilePaths } = require('../config/config');
 
 class QueryExecutionManager {
-  constructor() {
+  constructor(wrapperLockController) {
     this.cqlRules = undefined;
     this.cdmSchema = undefined;
-    this.wrapperConfig = undefined;
+    this.wrapperLockController = wrapperLockController;
   }
 
   async executeCqlQuery(query) {
@@ -18,7 +18,7 @@ class QueryExecutionManager {
     if (!areConfigsLoaded.success) {
       return { success: false, errors: areConfigsLoaded.errors };
     }
-
+    console.log('config files loaded successfully.');
     const translationService = new CqlTranslationService(
       this.cqlRules,
       this.cdmSchema
@@ -29,16 +29,21 @@ class QueryExecutionManager {
       return { success: false, errors: tResult.errors };
     }
 
+    console.log('CQL translation successful.');
+
     const formattedQuery = tResult.formattedQuery;
     const wrapperService = new WrapperCommunicationService(
       this.cdmSchema,
-      this.wrapperConfig,
-      this.cqlRules.cqlEntityKey
+      this.cqlRules.cqlEntityKey,
+      this.wrapperLockController
     );
 
     const { wrapperRequests, dataSources } =
       wrapperService.prepareWrapperRequests(formattedQuery);
 
+    console.log(this.wrapperLockController.wrapperInfo);
+
+    return { success: true, data: wrapperRequests };
     const executionPromises = dataSources.map((ds, index) => {
       const wrapperRequest = wrapperRequests[index];
       return CqlExecutionService.executeWrapperRequest(wrapperRequest);
@@ -59,7 +64,6 @@ class QueryExecutionManager {
       const filesToRead = [
         { path: configFilePaths.CQL_PATH, isJson: true },
         { path: configFilePaths.CDM_PATH, isJson: true },
-        { path: configFilePaths.WRAPPER_CONFIG_PATH, isJson: true },
       ];
 
       const results = await ReadFileService.readFile(filesToRead);
@@ -71,8 +75,6 @@ class QueryExecutionManager {
             this.cqlRules = result.value;
           } else if (result.key === configFilePaths.CDM_PATH) {
             this.cdmSchema = result.value;
-          } else if (result.key === configFilePaths.WRAPPER_CONFIG_PATH) {
-            this.wrapperConfig = result.value;
           }
         }
       }

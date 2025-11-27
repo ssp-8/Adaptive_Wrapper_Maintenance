@@ -5,20 +5,23 @@ const { configFilePaths } = require('../config/config');
 const Logger = require('../services/Logger');
 
 class ExecutionController {
-  constructor() {
+  constructor(wrapperLockController) {
     this.result = { success: false, errors: [] };
     this.logManager = new LogManager();
-    this.executionManager = new QueryExecutionManager();
+    this.wrapperLockController = wrapperLockController;
+    this.executionManager = new QueryExecutionManager(wrapperLockController);
   }
 
   async executeQuery(req) {
     try {
       await this._getCqlRules();
+      console.log('CQL rules loaded successfully.');
       this._validateRequest(req);
       if (this.result.errors.length > 0) {
+        console.log('Request validation failed:', this.result.errors);
         return this.result;
       }
-
+      console.log('Request validated successfully.');
       const query = req.body;
       const execResult = await this.executionManager.executeCqlQuery(query);
 
@@ -111,6 +114,7 @@ class ExecutionController {
         }
       });
     }
+    console.log('Request validation completed.');
   }
 
   _hideSensitiveInfo(reqMeta) {
